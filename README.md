@@ -4,20 +4,23 @@ In Azure DataLakeGen2, Using the ListPathsAsync method on the DataLakeServiceCli
 
 This extension method uses multiple threads to avoid calling the expensive recursive version of ListPathsAsync. This improves performance significantly, however the actual numbers varies depending on the directory structure.
 
-# Installation
+## Benchmarks
+No formal benchmarks provided yet. Actual improvements will vary depending on the folder structure targeted. With large folders the duration can however be decreased from hours to minutes.
+
+## Installation
 Build from source or download NuGet package: https://www.nuget.org/packages/vforteli.DataLakeClientExtensions
 
 Target frameworks .Net 6 and .Net Standard 2.1
 
-# Usage
+## Usage
 
 List files in directory
 ``` csharp
-  // Search with default options, substitutions, insertions, deletions and default maximum distance (3)
-  var results = FuzzySearch.Find("sometext", "here is someteext for you");   
-  
-  // Search with specified maximum distance
-  var results = FuzzySearch.Find("sometext", "here is someteext for you", 1);  
-    
-  
+  // List paths with IAsyncEnumerator
+  var sourceFileSystemClient = new DataLakeServiceClient(new Uri(sourceConnection)).GetFileSystemClient("somefilesystem");
+  await foreach (var path in sourceFileSystemClient.ListPathsParallelAsync("/"))       
+  {
+      // do something with PathItem
+  } 
 ```
+
