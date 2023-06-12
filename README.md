@@ -16,7 +16,7 @@ Target frameworks .Net 6 and .Net Standard 2.1
 
 List files in directory
 ``` csharp
-  // List paths with IAsyncEnumerator
+  // List paths with IAsyncEnumerable
   var sourceFileSystemClient = new DataLakeServiceClient(new Uri(sourceConnection)).GetFileSystemClient("somefilesystem");
   await foreach (var path in sourceFileSystemClient.ListPathsParallelAsync("/"))       
   {
