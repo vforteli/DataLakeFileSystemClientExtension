@@ -15,12 +15,13 @@ namespace DataLakeFileSystemClientExtension;
 public static class DataLakeFileSystemClientExtension
 {
     /// <summary>
-    /// List paths recursively using multiple thread for top level directories
+    /// List paths recursively using multiple threads
+    /// Fills provided blocking collection with PathItems
     /// </summary>
     /// <param name="dataLakeFileSystemClient">Authenticated filesystem client where the search should start</param>
     /// <param name="searchPath">Directory where recursive listing should start</param>
     /// <param name="paths">BlockingCollection where paths will be stored</param>
-    /// <param name="maxThreads">Max degrees of parallelism</param>
+    /// <param name="maxThreads">Max degrees of parallelism. Typically use something like 256</param>
     /// <param name="cancellationToken"></param>
     /// <returns>Task which completes when all items have been added to the blocking collection</returns>
     public static Task ListPathsParallelAsync(this DataLakeFileSystemClient dataLakeFileSystemClient, string searchPath, BlockingCollection<PathItem> paths, int maxThreads = 256, CancellationToken cancellationToken = default) => Task.Run(async () =>
@@ -51,7 +52,7 @@ public static class DataLakeFileSystemClientExtension
                                 paths.Add(childPath);
 
                                 if (!childPath.IsDirectory ?? false)
-                                {                                   
+                                {
                                     var currentCount = Interlocked.Increment(ref filesCount);
                                 }
                                 else
@@ -84,14 +85,14 @@ public static class DataLakeFileSystemClientExtension
 
 
     /// <summary>
-    /// Foo
+    /// List paths recursively using multiple threads
     /// </summary>
     /// <param name="dataLakeFileSystemClient"></param>
     /// <param name="searchPath"></param>
     /// <param name="maxThreads"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public static async IAsyncEnumerable<PathItem> DoFooAsync(this DataLakeFileSystemClient dataLakeFileSystemClient, string searchPath, int maxThreads = 256, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public static async IAsyncEnumerable<PathItem> ListPathsParallelAsync(this DataLakeFileSystemClient dataLakeFileSystemClient, string searchPath, int maxThreads = 256, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var paths = new BlockingCollection<PathItem>();
 
@@ -105,5 +106,3 @@ public static class DataLakeFileSystemClientExtension
         await task;
     }
 }
-
-
