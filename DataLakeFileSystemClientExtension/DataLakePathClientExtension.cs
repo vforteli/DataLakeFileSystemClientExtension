@@ -3,8 +3,11 @@ using Azure.Storage.Files.DataLake;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using Azure.Storage.Files.DataLake.Models;
 
-namespace AzCopySubstitute;
+namespace DataLakeFileSystemClientExtension;
 
 /// <summary>
 /// Extension method for listing paths using many threads
@@ -20,7 +23,7 @@ public static class DataLakeFileSystemClientExtension
     /// <param name="maxThreads">Max degrees of parallelism</param>
     /// <param name="cancellationToken"></param>
     /// <returns>Task which completes when all items have been added to the blocking collection</returns>
-    public static Task ListPathsParallelAsync(this DataLakeFileSystemClient dataLakeFileSystemClient, string searchPath, BlockingCollection<string> paths, int maxThreads = 256, CancellationToken cancellationToken = default) => Task.Run(async () =>
+    public static Task ListPathsParallelAsync(this DataLakeFileSystemClient dataLakeFileSystemClient, string searchPath, BlockingCollection<PathItem> paths, int maxThreads = 256, CancellationToken cancellationToken = default) => Task.Run(async () =>
     {
         var filesCount = 0;
         using var directoryPaths = new BlockingCollection<string>();
@@ -45,9 +48,10 @@ public static class DataLakeFileSystemClientExtension
                         {
                             await foreach (var childPath in dataLakeFileSystemClient.GetPathsAsync(directoryPath, recursive: false, cancellationToken: cancellationToken).ConfigureAwait(false))
                             {
+                                paths.Add(childPath);
+
                                 if (!childPath.IsDirectory ?? false)
-                                {
-                                    paths.Add(childPath.Name);
+                                {                                   
                                     var currentCount = Interlocked.Increment(ref filesCount);
                                 }
                                 else
@@ -77,4 +81,29 @@ public static class DataLakeFileSystemClientExtension
             paths.CompleteAdding();
         }
     });
+
+
+    /// <summary>
+    /// Foo
+    /// </summary>
+    /// <param name="dataLakeFileSystemClient"></param>
+    /// <param name="searchPath"></param>
+    /// <param name="maxThreads"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public static async IAsyncEnumerable<PathItem> DoFooAsync(this DataLakeFileSystemClient dataLakeFileSystemClient, string searchPath, int maxThreads = 256, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var paths = new BlockingCollection<PathItem>();
+
+        var task = dataLakeFileSystemClient.ListPathsParallelAsync(searchPath, paths, maxThreads, cancellationToken);
+
+        while (paths.TryTake(out var path, -1, cancellationToken))
+        {
+            yield return path;
+        }
+
+        await task;
+    }
 }
+
+
