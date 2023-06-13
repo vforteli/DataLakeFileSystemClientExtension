@@ -5,6 +5,8 @@ VisualStudioVersion = 25.0.1705.6
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataLakeFileSystemClientExtension", "DataLakeFileSystemClientExtension\DataLakeFileSystemClientExtension.csproj", "{C7C21250-F87F-440E-8647-F2CADB91F5C7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleTester", "ConsoleTester\ConsoleTester.csproj", "{B0FF14D5-EAD0-492F-A689-2741895CC258}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{C7C21250-F87F-440E-8647-F2CADB91F5C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C7C21250-F87F-440E-8647-F2CADB91F5C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C7C21250-F87F-440E-8647-F2CADB91F5C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0FF14D5-EAD0-492F-A689-2741895CC258}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0FF14D5-EAD0-492F-A689-2741895CC258}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0FF14D5-EAD0-492F-A689-2741895CC258}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0FF14D5-EAD0-492F-A689-2741895CC258}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
