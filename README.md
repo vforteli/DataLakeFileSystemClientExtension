@@ -1,4 +1,4 @@
-# DataLakeFileSystemClientExtension
+# DataLakeFileSystemClientExtension ListPathsParallelAsync
 Extension method for listing paths in parallel with Azure DataLakeFileSystemClient.
 In Azure DataLakeGen2, Using the ListPathsAsync method on the DataLakeServiceClient can take tens of minutes or even hours with as little as hundreds of thousands of files across directories.
 
@@ -8,7 +8,14 @@ This extension method uses multiple threads to avoid calling the expensive recur
 The not so scientific benchmarks have been run on a storage account containing one filesystem containing 32 folders, each folder contains 1600 subfolders and one file and each subfolder contains 10 files.  
 Total files and folders: 563234.
 
-Tests run on an MacBook Pro M2 with 100/10 mbit connection against an Azure Storage Account with Standard SKU and hierarchical namespace enabled (Datalakegen2).
+Tests run on an MacBook Pro M2 with 100/10 Mbit connection against an Azure Storage Account with Standard SKU and hierarchical namespace enabled (Datalakegen2).
+
+| Test | Duration |
+|------|----------|
+|SDK GetPathsAsync | 474 sec |
+|ListPathsParallelAsync 16 threads| 157 sec |
+|ListPathsParallelAsync 128 threads| 25 sec |
+|ListPathsParallelAsync 256 threads| 17 sec |
 
 
 ## Installation
