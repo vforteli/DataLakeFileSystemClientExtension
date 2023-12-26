@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Azure.Storage.Files.DataLake.Models;
+using System.Threading.Channels;
 
 namespace DataLakeFileSystemClientExtension;
 
@@ -20,27 +21,27 @@ public static class DataLakeFileSystemClientExtension
     /// </summary>
     /// <param name="dataLakeFileSystemClient">Authenticated filesystem client where the search should start</param>
     /// <param name="searchPath">Directory where recursive listing should start</param>
-    /// <param name="paths">BlockingCollection where paths will be stored</param>
+    /// <param name="paths">Channel where paths will be written</param>
     /// <param name="maxThreads">Max degrees of parallelism. Typically use something like 256</param>
     /// <param name="cancellationToken"></param>
     /// <returns>Task which completes when all items have been added to the blocking collection</returns>
-    public static Task ListPathsParallelAsync(this DataLakeFileSystemClient dataLakeFileSystemClient, string searchPath, BlockingCollection<PathItem> paths, int maxThreads = 256, CancellationToken cancellationToken = default) => Task.Run(async () =>
+    public static Task ListPathsParallelAsync(this DataLakeFileSystemClient dataLakeFileSystemClient, string searchPath, ChannelWriter<PathItem> paths, int maxThreads = 256, CancellationToken cancellationToken = default) => Task.Run(async () =>
     {
         var filesCount = 0;
-        using var directoryPaths = new BlockingCollection<string>();
+        var directoryPaths = Channel.CreateUnbounded<string>();
         var tasks = new ConcurrentDictionary<Guid, Task>();
 
         using var semaphore = new SemaphoreSlim(maxThreads, maxThreads);
 
-        directoryPaths.Add(searchPath);
+        await directoryPaths.Writer.WriteAsync(searchPath).ConfigureAwait(false);
 
         try
         {
-            while (!directoryPaths.IsCompleted)
+            while (await directoryPaths.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
             {
                 await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
-                if (directoryPaths.TryTake(out var directoryPath, Timeout.Infinite, cancellationToken))
+                if (directoryPaths.Reader.TryRead(out var directoryPath))
                 {
                     var taskId = Guid.NewGuid();
                     tasks.TryAdd(taskId, Task.Run(async () =>
@@ -49,7 +50,7 @@ public static class DataLakeFileSystemClientExtension
                         {
                             await foreach (var childPath in dataLakeFileSystemClient.GetPathsAsync(directoryPath, recursive: false, cancellationToken: cancellationToken).ConfigureAwait(false))
                             {
-                                paths.Add(childPath);
+                                await paths.WriteAsync(childPath).ConfigureAwait(false);
 
                                 if (!childPath.IsDirectory ?? false)
                                 {
@@ -57,7 +58,7 @@ public static class DataLakeFileSystemClientExtension
                                 }
                                 else
                                 {
-                                    directoryPaths.Add(childPath.Name);
+                                    await directoryPaths.Writer.WriteAsync(childPath.Name).ConfigureAwait(false);
                                 }
                             }
                         }
@@ -67,9 +68,9 @@ public static class DataLakeFileSystemClientExtension
                             tasks.TryRemove(taskId, out _);
                             semaphore.Release();
 
-                            if (tasks.IsEmpty && directoryPaths.Count == 0)
+                            if (tasks.IsEmpty && directoryPaths.Reader.Count == 0)
                             {
-                                directoryPaths.CompleteAdding();
+                                directoryPaths.Writer.Complete();
                             }
                         }
                     }, cancellationToken));
@@ -79,7 +80,7 @@ public static class DataLakeFileSystemClientExtension
         catch (TaskCanceledException) { }
         finally
         {
-            paths.CompleteAdding();
+            paths.Complete();
         }
     });
 
@@ -94,11 +95,10 @@ public static class DataLakeFileSystemClientExtension
     /// <returns></returns>
     public static async IAsyncEnumerable<PathItem> ListPathsParallelAsync(this DataLakeFileSystemClient dataLakeFileSystemClient, string searchPath, int maxThreads = 256, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var paths = new BlockingCollection<PathItem>();
-
+        var paths = Channel.CreateUnbounded<PathItem>();
         var task = dataLakeFileSystemClient.ListPathsParallelAsync(searchPath, paths, maxThreads, cancellationToken);
 
-        while (paths.TryTake(out var path, -1, cancellationToken))
+        await foreach (var path in paths.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
         {
             yield return path;
         }
