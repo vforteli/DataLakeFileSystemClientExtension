@@ -9,7 +9,7 @@
 	</PropertyGroup>
 	<PropertyGroup>
 		<PackageId>vforteli.DataLakeClientExtensions</PackageId>
-		<VersionPrefix>0.2.0</VersionPrefix>
+		<VersionPrefix>0.3.0</VersionPrefix>
 		<Title>DataLakeClientExtensions</Title>
 		<Authors>Verner Fortelius</Authors>
 		<Description>Extension method for recursively listing paths in Azure DataLake with multiple threads</Description>
